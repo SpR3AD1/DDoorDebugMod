@@ -25,7 +25,7 @@ namespace DDoorDebug
     public class DDoorDebugPlugin : BaseUnityPlugin
     {
         const string NAME = "DDoorDebugPlugin";
-        const string VERSION = "0.3.6";
+        const string VERSION = "0.3.7";
         const string GUID = "org.bepinex.plugins.ddoordebugkz";
         //-
         public static DDoorDebugPlugin instance { get; private set; }
@@ -69,6 +69,7 @@ namespace DDoorDebug
         public static float baseZoom = 1f; //zoom reset
         public static bool infMagic = false; //inf magic
         public static bool justReloaded = false; //used for reload file
+        public static bool frameAdvance = false; //used for frame advance
         public static Dictionary<string, int> spellDic = new Dictionary<string, int>() //for reload file spell fix
         {
             { "arrow", 1 },
@@ -418,7 +419,11 @@ namespace DDoorDebug
             DData.allScenes = scenes.OrderByDescending(x => x).ToArray();
 		}
 
-        private void FixedUpdate() => SamplePositionHistory();
+        private void FixedUpdate()
+        {
+            SamplePositionHistory();
+            AdvanceNextFrame();
+        }
 
         private void Update()
         {
@@ -428,6 +433,31 @@ namespace DDoorDebug
             DrawLine();
             DrawMeshColliders();
             GUIMenus.BindMenu.listenForKeys();
+        }
+
+        private void ToggleFrameAdvance()
+        {
+            if (frameAdvance)
+            {
+                Time.timeScale = timescale; //timescale
+                frameAdvance = false;
+            }
+            else
+            {
+                Time.timeScale = 0f;
+                frameAdvance = true;
+            }
+        }
+
+        private void AdvanceNextFrame()
+        {
+            if (frameAdvance)
+            {
+                if (Time.timeScale == 1f)
+                {
+                    Time.timeScale = 0f;
+                }
+            }
         }
 
         // We could rewrite it to be generic but who cares
@@ -839,7 +869,7 @@ namespace DDoorDebug
             }
             if (GUIMenus.BindMenu.CheckIfPressed("Load pos"))
             {
-                if (savePosDic.ContainsKey(DData.curActiveScene.GetHashCode())) 
+                if (savePosDic.ContainsKey(DData.curActiveScene.GetHashCode()))
                 {
                     PlayerGlobal.instance.SetPosition(savePosDic[DData.curActiveScene.GetHashCode()], false, false);
                 }
@@ -847,15 +877,15 @@ namespace DDoorDebug
 
             if (GUIMenus.BindMenu.CheckIfPressed("Load gpos"))
             {
-				if (DData.lastCheckPoint.pos != null)
-				{
-                	PlayerGlobal.instance.SetPosition(DData.lastCheckPoint.pos, false, false);
-				}
+                if (DData.lastCheckPoint.pos != null)
+                {
+                    PlayerGlobal.instance.SetPosition(DData.lastCheckPoint.pos, false, false);
+                }
             }
-			if (GUIMenus.BindMenu.CheckIfPressed("Save gpos"))
-			{
-				DData.lastCheckPoint.pos = PlayerGlobal.instance.transform.position;
-			}
+            if (GUIMenus.BindMenu.CheckIfPressed("Save gpos"))
+            {
+                DData.lastCheckPoint.pos = PlayerGlobal.instance.transform.position;
+            }
 
             if (GUIMenus.BindMenu.CheckIfPressed("Show colliders"))
             {
@@ -920,7 +950,7 @@ namespace DDoorDebug
             if (!UIMenuPauseController.instance.IsPaused() && Time.timeScale != timescale && !wasSlow)
             {
                 timescale = Time.timeScale;
-            }        
+            }
 
             Buttons.PauseInput(GUIMenus.BindMenu.CheckIfModifierHeld("Mouse tele"));
             if (GUIMenus.BindMenu.CheckIfPressed("Mouse tele") && PlayerGlobal.instance != null && !PlayerGlobal.instance.InputPaused())
@@ -933,7 +963,7 @@ namespace DDoorDebug
                 CameraRotationControl.instance.Rotate(currAngle, 1000);
                 isTurning = true;
             }
-            
+
             if (!GUIMenus.BindMenu.CheckIfHeld("Rotate cam right") && CameraRotationControl.instance && isTurning)
             {
                 isTurning = false;
@@ -970,9 +1000,9 @@ namespace DDoorDebug
             {
                 skipcs = true;
             }
-			else if (!GUIMenus.BindMenu.CheckIfHeld("Instant textskip"))
+            else if (!GUIMenus.BindMenu.CheckIfHeld("Instant textskip"))
             {
-				skipcs = false;
+                skipcs = false;
             }
 
             if ((skipcs && !inputwaspaused) || inputwaspaused)
@@ -987,8 +1017,8 @@ namespace DDoorDebug
                     }
                 }
                 if (PlayerGlobal.instance.InputPaused())
-                { 
-                    inputwaspaused = true; 
+                {
+                    inputwaspaused = true;
                 }
                 if (inputwaspaused && !PlayerGlobal.instance.InputPaused())
                 {
@@ -1163,10 +1193,10 @@ namespace DDoorDebug
             if (GUIMenus.BindMenu.CheckIfPressed("Save file"))
             {
                 if (!(GameSave.GetSaveData().GetSpawnScene() == SceneManager.GetActiveScene().name))
-                { 
+                {
                     GameSave.GetSaveData().SetSpawnPoint(SceneManager.GetActiveScene().name, null);
-                }      
-                GameSave.GetSaveData().Save();     
+                }
+                GameSave.GetSaveData().Save();
             }
 
             if (GUIMenus.BindMenu.CheckIfPressed("Get gp"))
@@ -1176,6 +1206,19 @@ namespace DDoorDebug
                 {
                     c.enabled = false;
                     c.enabled = true;
+                }
+            }
+
+            if (GUIMenus.BindMenu.CheckIfPressed("Toggle time"))
+            {
+                ToggleFrameAdvance();
+            }
+
+            if (GUIMenus.BindMenu.CheckIfPressed("Frame advance"))
+            {
+                if (frameAdvance)
+                {
+                    Time.timeScale = 1f;
                 }
             }
         }
